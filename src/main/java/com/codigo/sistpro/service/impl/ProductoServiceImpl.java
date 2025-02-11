@@ -3,15 +3,17 @@ package com.codigo.sistpro.service.impl;
 
 import com.codigo.sistpro.entity.Categoria;
 import com.codigo.sistpro.entity.Producto;
+import com.codigo.sistpro.exception.exp.NombreDuplicadoException;
+import com.codigo.sistpro.exception.exp.RecursoNoEncontradoException;
 import com.codigo.sistpro.repository.CategoriaRepository;
 import com.codigo.sistpro.repository.ProductoRepository;
 import com.codigo.sistpro.service.ProductoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,22 +24,16 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public Producto guardar(Producto producto) {
+        validarProducto(producto);
 
-        if (producto.getCategoria() == null || producto.getCategoria().getId() == null) {
-            throw new RuntimeException("Debe proporcionar un ID de categoría válido.");
-        }
-
-        Categoria categoria = categoriaRepository.findById(producto.getCategoria().getId())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada."));
-
-        producto.setCategoria(categoria);
+        producto.setCategoria(categoriaRepository.findById(producto.getCategoria().getId())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada.")));
 
         if (producto.getCodigo() == null || producto.getCodigo().isEmpty()) {
             producto.setCodigo(generarCodigo(producto));
         }
 
         return productoRepository.save(producto);
-
     }
 
 
@@ -49,7 +45,7 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     public void eliminarProducto(Long id) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Producto con ID " + id + " no encontrado."));
 
         if (producto.getStock() > 0) {
             throw new RuntimeException("No se puede eliminar el producto porque aún tiene stock disponible.");
@@ -60,20 +56,34 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public Producto obtenerPorId(Long id) {
-        return productoRepository.findById(id).orElseThrow(()->new RuntimeException("No hay coincidencias con aquel id"));
+        return productoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No hay coincidencias con aquel ID."));
     }
 
     @Override
     public Producto actualizar(Long id, Producto productoActualizado) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Producto con ID " + id + " no encontrado."));
 
         if (productoActualizado.getNombre() != null) {
-            producto.setNombre(productoActualizado.getNombre());
+            String nuevoNombre = productoActualizado.getNombre().trim();
+            if (!StringUtils.hasText(nuevoNombre)) {
+                throw new IllegalArgumentException("El nombre del producto no puede estar vacío.");
+            }
+            if (!nuevoNombre.equalsIgnoreCase(producto.getNombre()) && productoRepository.existsByNombre(nuevoNombre)) {
+                throw new NombreDuplicadoException("El nombre '" + nuevoNombre + "' ya está en uso.");
+            }
+            producto.setNombre(nuevoNombre);
         }
+
         if (productoActualizado.getDescripcion() != null) {
-            producto.setDescripcion(productoActualizado.getDescripcion());
+            String nuevaDescripcion = productoActualizado.getDescripcion().trim();
+            if (!StringUtils.hasText(nuevaDescripcion)) {
+                throw new IllegalArgumentException("La descripción del producto no puede estar vacía.");
+            }
+            producto.setDescripcion(nuevaDescripcion);
         }
+
         if (productoActualizado.getPrecio() != null) {
             producto.setPrecio(productoActualizado.getPrecio());
         }
@@ -82,7 +92,7 @@ public class ProductoServiceImpl implements ProductoService {
         }
         if (productoActualizado.getCategoria() != null && productoActualizado.getCategoria().getId() != null) {
             Categoria categoria = categoriaRepository.findById(productoActualizado.getCategoria().getId())
-                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada."));
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Categoría con ID " + productoActualizado.getCategoria().getId() + " no encontrada."));
             producto.setCategoria(categoria);
         }
 
@@ -90,7 +100,6 @@ public class ProductoServiceImpl implements ProductoService {
 
         return productoRepository.save(producto);
     }
-
 
 
     private String generarCodigo(Producto producto) {
@@ -104,6 +113,18 @@ public class ProductoServiceImpl implements ProductoService {
         return prefijoCodigo + "-" + String.format("%03d", count + 1);
     }
 
+    private void validarProducto(Producto producto) {
+        if (producto == null || !StringUtils.hasText(producto.getNombre()) || !StringUtils.hasText(producto.getDescripcion())) {
+            throw new IllegalArgumentException("El producto no puede estar vacío y debe contener un nombre y una descripción.");
+        }
 
+        if (productoRepository.existsByNombre(producto.getNombre())) {
+            throw new NombreDuplicadoException("El nombre '" + producto.getNombre() + "' ya está en uso.");
+        }
+
+        if (producto.getCategoria() == null || producto.getCategoria().getId() == null) {
+            throw new RecursoNoEncontradoException("Debe proporcionar un ID de categoría válido.");
+        }
+    }
 
 }

@@ -59,8 +59,8 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
-    public Optional<Producto> obtenerPorId(Long id) {
-        return productoRepository.findById(id);
+    public Producto obtenerPorId(Long id) {
+        return productoRepository.findById(id).orElseThrow(()->new RuntimeException("No hay coincidencias con aquel id"));
     }
 
     @Override
@@ -68,24 +68,29 @@ public class ProductoServiceImpl implements ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-        if (productoActualizado.getCategoria() == null) {
-            throw new RuntimeException("Debe proporcionar una categoría válida.");
+        if (productoActualizado.getNombre() != null) {
+            producto.setNombre(productoActualizado.getNombre());
+        }
+        if (productoActualizado.getDescripcion() != null) {
+            producto.setDescripcion(productoActualizado.getDescripcion());
+        }
+        if (productoActualizado.getPrecio() != null) {
+            producto.setPrecio(productoActualizado.getPrecio());
+        }
+        if (productoActualizado.getStock() != null) {
+            producto.setStock(productoActualizado.getStock());
+        }
+        if (productoActualizado.getCategoria() != null && productoActualizado.getCategoria().getId() != null) {
+            Categoria categoria = categoriaRepository.findById(productoActualizado.getCategoria().getId())
+                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada."));
+            producto.setCategoria(categoria);
         }
 
-        Categoria categoria = categoriaRepository.findById(productoActualizado.getCategoria().getId())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada."));
-
-        producto.setNombre(productoActualizado.getNombre());
-        producto.setDescripcion(productoActualizado.getDescripcion());
-        producto.setPrecio(productoActualizado.getPrecio());
-        producto.setStock(productoActualizado.getStock());
-        producto.setCategoria(categoria);
-
-        // Generar un nuevo código
         producto.setCodigo(generarCodigo(producto));
 
         return productoRepository.save(producto);
     }
+
 
 
     private String generarCodigo(Producto producto) {
@@ -98,5 +103,7 @@ public class ProductoServiceImpl implements ProductoService {
         Long count = productoRepository.countByCodigoStartingWith(prefijoCodigo);
         return prefijoCodigo + "-" + String.format("%03d", count + 1);
     }
+
+
 
 }

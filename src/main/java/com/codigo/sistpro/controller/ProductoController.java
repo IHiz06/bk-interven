@@ -28,4 +28,14 @@ public class ProductoController {
     public void eliminarProducto(@PathVariable Long id){
         productoService.eliminarProducto(id);
     }
+
+    @GetMapping("/obtenerid")
+    public Producto obtenerPorId(@PathVariable Long id) {
+        return productoService.obtenerPorId(id);
+    }
+
+    @PutMapping("/actualizar/{id}")
+    public Producto actualizarProducto(@PathVariable Long id, @RequestBody Producto producto){
+        return productoService.actualizar(id, producto);
+    }
 }

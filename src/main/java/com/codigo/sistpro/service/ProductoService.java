@@ -9,6 +9,6 @@ public interface ProductoService {
     Producto guardar(Producto producto);
     List<Producto> listartodos();
     void eliminarProducto(Long id);
-    Optional<Producto> obtenerPorId(Long id);
+    Producto obtenerPorId(Long id);
     Producto actualizar(Long id, Producto productoActualizado);
 }

@@ -11,7 +11,9 @@ import com.codigo.sistpro.service.ProductoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -21,9 +23,15 @@ public class ProductoServiceImpl implements ProductoService {
 
     private final CategoriaRepository categoriaRepository;
     private final ProductoRepository productoRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Override
-    public Producto guardar(Producto producto) {
+    public Producto guardar(Producto producto, MultipartFile imagen) throws IOException {
+        if (imagen != null && !imagen.isEmpty()) {
+            String imagenUrl = cloudinaryService.subirImagen(imagen);
+            producto.setImagenUrl(imagenUrl);
+        }
+
         validarProducto(producto);
 
         producto.setCategoria(categoriaRepository.findById(producto.getCategoria().getId())
@@ -61,9 +69,20 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
-    public Producto actualizar(Long id, Producto productoActualizado) {
+    public Producto actualizar(Long id, Producto productoActualizado, MultipartFile nuevaImagen, Boolean eliminarImagen) throws IOException {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Producto con ID " + id + " no encontrado."));
+
+        if (Boolean.TRUE.equals(eliminarImagen)) {
+            producto.setImagenUrl(null);
+        } else if (nuevaImagen != null && !nuevaImagen.isEmpty()) {
+            String nuevaImagenUrl = cloudinaryService.subirImagen(nuevaImagen);
+            producto.setImagenUrl(nuevaImagenUrl);
+        }
+
+        if (productoActualizado == null) {
+            return productoRepository.save(producto);
+        }
 
         if (productoActualizado.getNombre() != null) {
             String nuevoNombre = productoActualizado.getNombre().trim();
@@ -100,6 +119,8 @@ public class ProductoServiceImpl implements ProductoService {
 
         return productoRepository.save(producto);
     }
+
+
 
 
     private String generarCodigo(Producto producto) {

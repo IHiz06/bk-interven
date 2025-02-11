@@ -19,6 +19,9 @@ public class Producto {
     private Double precio;
     private Integer stock;
 
+    //Contendra la url de la imagen
+    private String imagenUrl;
+
     @ManyToOne
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;

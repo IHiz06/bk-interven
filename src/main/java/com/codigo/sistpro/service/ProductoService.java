@@ -12,6 +12,6 @@ public interface ProductoService {
     List<Producto> listartodos();
     void eliminarProducto(Long id);
     Producto obtenerPorId(Long id);
-
+    List<Producto> obtenerProductosConStockBajo();
     Producto actualizar(Long id, Producto productoActualizado, MultipartFile nuevaImagen, Boolean eliminarImagen) throws IOException;
 }

@@ -36,7 +36,8 @@ public class ProductoServiceImpl implements ProductoService {
 
         producto.setCategoria(categoriaRepository.findById(producto.getCategoria().getId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada.")));
-
+        int valorMinimo = 10;
+        producto.setStockMinimo(valorMinimo);
         if (producto.getCodigo() == null || producto.getCodigo().isEmpty()) {
             producto.setCodigo(generarCodigo(producto));
         }
@@ -66,6 +67,11 @@ public class ProductoServiceImpl implements ProductoService {
     public Producto obtenerPorId(Long id) {
         return productoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No hay coincidencias con aquel ID."));
+    }
+
+    @Override
+    public List<Producto> obtenerProductosConStockBajo() {
+        return productoRepository.findByStockLessThan(10); // Stock mínimo por defecto 10
     }
 
     @Override
@@ -109,6 +115,11 @@ public class ProductoServiceImpl implements ProductoService {
         if (productoActualizado.getStock() != null) {
             producto.setStock(productoActualizado.getStock());
         }
+
+        if (productoActualizado.getStockMinimo() != null) {
+            producto.setStockMinimo(productoActualizado.getStockMinimo());
+        }
+
         if (productoActualizado.getCategoria() != null && productoActualizado.getCategoria().getId() != null) {
             Categoria categoria = categoriaRepository.findById(productoActualizado.getCategoria().getId())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Categoría con ID " + productoActualizado.getCategoria().getId() + " no encontrada."));

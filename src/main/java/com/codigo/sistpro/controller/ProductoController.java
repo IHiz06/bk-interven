@@ -36,6 +36,12 @@ public class ProductoController {
         return productoService.guardar(producto, imagen);
     }
 
+    @GetMapping("/stock/alertas")
+    public ResponseEntity<List<Producto>> obtenerAlertasStock() {
+        List<Producto> productosConStockBajo = productoService.obtenerProductosConStockBajo();
+        return ResponseEntity.ok(productosConStockBajo);
+    }
+
 
     @DeleteMapping("/{id}")
     public void eliminarProducto(@PathVariable Long id){

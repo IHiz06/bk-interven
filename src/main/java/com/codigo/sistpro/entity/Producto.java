@@ -19,6 +19,9 @@ public class Producto {
     private Double precio;
     private Integer stock;
 
+    @Column(nullable = false)
+    private Integer stockMinimo;
+
     //Contendra la url de la imagen
     private String imagenUrl;
 
